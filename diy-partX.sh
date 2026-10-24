@@ -39,3 +39,39 @@ else
 fi
 
 echo "🎉 双重拦截部署完毕！"
+
+# ==========================================
+# 自定义 HomeProxy V2
+# ==========================================
+echo ">>> 开始替换 HomeProxy..."
+
+# 确认位于 OpenWrt 源码根目录
+if [ ! -f rules.mk ]; then
+    echo "ERROR: 当前不在 OpenWrt 源码根目录"
+    exit 1
+fi
+
+# 下载自定义 HomeProxy
+mkdir -p package/custom
+rm -rf package/custom/luci-app-homeproxy
+
+git clone --depth 1 -b V2 \
+    https://github.com/weicaixian86/luci-app-homeproxy.git \
+    package/custom/luci-app-homeproxy || exit 1
+
+# 确认软件包结构正确
+test -f package/custom/luci-app-homeproxy/Makefile || {
+    echo "ERROR: HomeProxy 缺少 Makefile"
+    exit 1
+}
+
+# 移除 feeds 中同名软件包的符号链接
+find package/feeds -type l \
+    -name 'luci-app-homeproxy' -delete 2>/dev/null || true
+
+# 检查是否有重复软件包定义
+echo ">>> 检查 HomeProxy 软件包..."
+find package -path '*/luci-app-homeproxy/Makefile' -print
+
+echo ">>> HomeProxy V2 准备完成"
+
