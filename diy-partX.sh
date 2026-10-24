@@ -40,38 +40,46 @@ fi
 
 echo "🎉 双重拦截部署完毕！"
 
+
 # ==========================================
-# 自定义 HomeProxy V2
+# 自定义 HomeProxy - weicaixian86
 # ==========================================
 echo ">>> 开始替换 HomeProxy..."
 
-# 确认位于 OpenWrt 源码根目录
+# 确认 OpenWrt 源码目录
 if [ ! -f rules.mk ]; then
     echo "ERROR: 当前不在 OpenWrt 源码根目录"
     exit 1
 fi
 
-# 下载自定义 HomeProxy
+# 清理旧版本
 mkdir -p package/custom
 rm -rf package/custom/luci-app-homeproxy
 
-git clone --depth 1 -b V2 \
+# 克隆默认 main 分支
+git clone --depth 1 -b main \
     https://github.com/weicaixian86/luci-app-homeproxy.git \
-    package/custom/luci-app-homeproxy || exit 1
+    /tmp/custom-homeproxy || exit 1
 
-# 确认软件包结构正确
-test -f package/custom/luci-app-homeproxy/Makefile || {
-    echo "ERROR: HomeProxy 缺少 Makefile"
+# 检查软件包结构
+test -f /tmp/custom-homeproxy/luci-app-homeproxy/Makefile || {
+    echo "ERROR: 找不到 HomeProxy Makefile"
     exit 1
 }
 
-# 移除 feeds 中同名软件包的符号链接
+# 将实际软件包放入 OpenWrt package 目录
+cp -a /tmp/custom-homeproxy/luci-app-homeproxy \
+    package/custom/luci-app-homeproxy
+
+# 移除原版 HomeProxy 的 feeds 链接
 find package/feeds -type l \
     -name 'luci-app-homeproxy' -delete 2>/dev/null || true
 
-# 检查是否有重复软件包定义
-echo ">>> 检查 HomeProxy 软件包..."
+# 清理临时文件
+rm -rf /tmp/custom-homeproxy
+
+# 检查
+echo ">>> HomeProxy 软件包位置："
 find package -path '*/luci-app-homeproxy/Makefile' -print
 
-echo ">>> HomeProxy V2 准备完成"
-
+echo ">>> HomeProxy 自定义源码准备完成"
